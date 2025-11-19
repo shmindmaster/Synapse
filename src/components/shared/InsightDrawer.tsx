@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Send, Bot, Sparkles, Loader2 } from 'lucide-react';
 import { FileInfo } from '../../types';
+import { apiUrl } from '../../utils/api';
 
 interface InsightDrawerProps {
   isOpen: boolean;
@@ -31,7 +32,7 @@ const InsightDrawer: React.FC<InsightDrawerProps> = ({ isOpen, onClose, activeFi
     if (!activeFile) return;
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:3001/api/analyze', {
+      const res = await fetch(apiUrl('/api/analyze'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ filePath: activeFile.path })
@@ -53,7 +54,7 @@ const InsightDrawer: React.FC<InsightDrawerProps> = ({ isOpen, onClose, activeFi
     setLoading(true);
 
     try {
-      const res = await fetch('http://localhost:3001/api/chat', {
+      const res = await fetch(apiUrl('/api/chat'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

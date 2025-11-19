@@ -27,3 +27,6 @@ dist-ssr
 .env
 .env.local
 .env*.local
+
+# Synapse Memory (Vector Store)
+synapse_memory.json

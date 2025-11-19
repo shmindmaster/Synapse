@@ -1,6 +1,7 @@
 import express from 'express';
 import path from 'path';
 import { promises as fs } from 'fs';
+import { existsSync } from 'fs';
 import cors from 'cors';
 import textract from 'textract';
 import walk from 'walk';
@@ -12,22 +13,41 @@ dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+// Use /app/data in Docker, current directory in development
+const DATA_DIR = process.env.DATA_DIR || __dirname;
+const INDEX_FILE = path.join(DATA_DIR, 'synapse_memory.json');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Azure AI Configuration
-const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
-const apiKey = process.env.AZURE_OPENAI_KEY;
-const deployment = process.env.AZURE_OPENAI_CHAT_DEPLOYMENT || "gpt-4o"; 
-const apiVersion = process.env.AZURE_OPENAI_CHAT_API_VERSION || "2024-02-15-preview";
+const client = new AzureOpenAI({ 
+  endpoint: process.env.AZURE_OPENAI_ENDPOINT, 
+  apiKey: process.env.AZURE_OPENAI_KEY, 
+  apiVersion: process.env.AZURE_OPENAI_CHAT_API_VERSION || "2024-02-15-preview", 
+  deployment: process.env.AZURE_OPENAI_CHAT_DEPLOYMENT || "gpt-4o"
+});
+const embedDeployment = process.env.AZURE_OPENAI_EMBED_DEPLOYMENT || "text-embedding-3-small"; 
 
 // Validate Azure OpenAI credentials before initializing client
-if (!endpoint || !apiKey) {
+if (!process.env.AZURE_OPENAI_ENDPOINT || !process.env.AZURE_OPENAI_KEY) {
   console.error('ERROR: Azure OpenAI credentials not configured. Please set AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_KEY in .env');
   process.exit(1);
 }
-const client = new AzureOpenAI({ endpoint, apiKey, apiVersion, deployment });
+
+// Persistent Vector Store
+let vectorStore = [];
+
+// Load Memory on Startup
+async function loadMemory() {
+  if (existsSync(INDEX_FILE)) {
+    console.log("🧠 Loading Synapse Memory...");
+    const data = await fs.readFile(INDEX_FILE, 'utf-8');
+    vectorStore = JSON.parse(data);
+    console.log(`✅ Memory Loaded: ${vectorStore.length} chunks indexed.`);
+  }
+}
+loadMemory();
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' })); // Increased limit for large file analysis
@@ -39,12 +59,32 @@ function normalizePath(filePath) {
 
 // Helper: Extract text from files
 function extractText(filePath) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     textract.fromFileWithPath(filePath, (error, text) => {
-      if (error) reject(error);
+      if (error) resolve(""); 
       else resolve(text);
     });
   });
+}
+
+// Split text into overlapping chunks (Context Window Optimization)
+function chunkText(text, chunkSize = 1000, overlap = 200) {
+  const chunks = [];
+  for (let i = 0; i < text.length; i += (chunkSize - overlap)) {
+    chunks.push(text.substring(i, i + chunkSize));
+  }
+  return chunks;
+}
+
+// Cosine Similarity Helper
+function cosineSimilarity(vecA, vecB) {
+  let dot = 0.0, normA = 0.0, normB = 0.0;
+  for (let i = 0; i < vecA.length; i++) {
+    dot += vecA[i] * vecB[i];
+    normA += vecA[i] * vecA[i];
+    normB += vecB[i] * vecB[i];
+  }
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
 // 1. Smart Scan Endpoint (Preserves existing logic + prepares for AI)
@@ -191,6 +231,135 @@ app.post('/api/file-action', async (req, res) => {
   }
 });
 
+// 5. Indexing Endpoint with Persistence & Chunking
+app.post('/api/index-files', async (req, res) => {
+  const { baseDirectories } = req.body;
+  let newVectors = []; // Temp store to append
+  let filesProcessed = 0;
+  let totalFiles = 0;
+
+  for (const directory of baseDirectories) {
+    const walker = walk.walk(directory.path, { followLinks: false });
+
+    walker.on('file', async (root, stats, next) => {
+      const filePath = path.join(root, stats.name);
+      if (stats.name.startsWith('.') || filePath.includes('node_modules')) {
+        next();
+        return;
+      }
+      totalFiles++;
+
+      try {
+        const content = await extractText(filePath);
+        if (content && content.length > 50) {
+           // Chunking Strategy
+           const chunks = chunkText(content);
+           
+           // Limit to first 5 chunks per file to save tokens/time for this demo
+           const limitedChunks = chunks.slice(0, 5); 
+
+           for (const chunk of limitedChunks) {
+             const embeddingResponse = await client.embeddings.create({
+               model: embedDeployment,
+               input: chunk,
+               encoding_format: "float",
+             });
+             
+             newVectors.push({
+               id: `${filePath}-${Date.now()}-${Math.random()}`,
+               name: stats.name,
+               path: normalizePath(filePath),
+               embedding: embeddingResponse.data[0].embedding,
+               preview: chunk // Store actual text chunk for RAG
+             });
+           }
+        }
+      } catch (error) {
+        console.error(`Skipping ${filePath}: ${error.message}`);
+      }
+      
+      filesProcessed++;
+      res.write(JSON.stringify({ filesProcessed, totalFiles, status: 'indexing' }) + '\n');
+      next();
+    });
+
+    walker.on('end', async () => {
+      if (directory === baseDirectories[baseDirectories.length - 1]) {
+        // Merge and Save - Remove old entries for same paths, then add new ones
+        vectorStore = [...vectorStore.filter(v => !newVectors.find(n => n.path === v.path)), ...newVectors];
+        await fs.writeFile(INDEX_FILE, JSON.stringify(vectorStore));
+        
+        res.write(JSON.stringify({ success: true, count: vectorStore.length, status: 'complete' }));
+        res.end();
+      }
+    });
+  }
+});
+
+// 6. Check Index Status
+app.get('/api/index-status', (req, res) => {
+  res.json({ hasIndex: vectorStore.length > 0, count: vectorStore.length });
+});
+
+// 7. Enhanced Semantic Search with Deduplication
+app.post('/api/semantic-search', async (req, res) => {
+  const { query } = req.body;
+  if (!query || vectorStore.length === 0) return res.status(400).json({ error: 'Invalid query or empty index.' });
+
+  try {
+    const queryResponse = await client.embeddings.create({
+      model: embedDeployment,
+      input: query,
+      encoding_format: "float",
+    });
+    const queryEmbedding = queryResponse.data[0].embedding;
+
+    // Search & Deduplicate (Group chunks by file)
+    const rawResults = vectorStore.map(doc => ({
+      ...doc,
+      score: cosineSimilarity(queryEmbedding, doc.embedding)
+    }))
+    .sort((a, b) => b.score - a.score)
+    .filter(doc => doc.score > 0.25); // Filter noise
+
+    // Deduplicate: Return top file match only once
+    const uniqueFiles = new Map();
+    rawResults.forEach(r => {
+      if (!uniqueFiles.has(r.path)) {
+        uniqueFiles.set(r.path, {
+          name: r.name,
+          path: r.path,
+          keywords: [`${(r.score * 100).toFixed(0)}% Match`],
+          analysis: {
+            summary: r.preview.substring(0, 150) + "...", // Show the relevant chunk
+            category: "Semantic Result",
+            tags: ["Vector Match"],
+            sensitivity: "Low"
+          }
+        });
+      }
+    });
+
+    res.json({ results: Array.from(uniqueFiles.values()).slice(0, 12) });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- Production Serving ---
+if (process.env.NODE_ENV === 'production') {
+  // Serve static files from the React app build
+  app.use(express.static(path.join(__dirname, 'dist')));
+
+  // Handle React routing, return all requests to React app
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  });
+}
+
 app.listen(PORT, () => {
-  console.log(`Synapse Server running on port ${PORT}`);
+  console.log(`Synapse Neural Core running on port ${PORT}`);
+  if (process.env.NODE_ENV === 'production') {
+    console.log(`🚀 Production Mode: Serving static assets`);
+  }
 });
