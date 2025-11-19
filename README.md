@@ -1,126 +1,263 @@
-# TypeScript File Manager – AI-Enhanced File Management for Tech Teams
+# Synapse – The AI-Native Knowledge OS
 
 ## Overview
 
-TypeScript File Manager is an AI-enhanced file management system designed for development teams at startups and small-to-medium enterprises. The platform provides intelligent file organization, search capabilities, and automated workflows that help teams manage codebases and documentation more effectively.
+**Synapse** is an intelligent asset manager that transforms your local file system into a queryable knowledge base. Using Azure OpenAI, Synapse performs semantic analysis on your documents, understands their content, auto-tags them, generates summaries, and allows you to chat with your documents using RAG (Retrieval Augmented Generation).
 
-Built for development teams that need better file organization and discovery, TypeScript File Manager combines traditional file management with Azure AI to deliver intelligent search, categorization, and workflow automation.
+Instead of just moving files, Synapse understands what they contain and helps you organize, discover, and interact with your knowledge assets.
 
-**Demo**: https://typescript-file-manager.shtrial.com
+**Tagline**: "Turn your file system into a queryable knowledge base."
 
 ## Key Features
 
-- **Intelligent File Organization**: AI-powered file categorization and tagging
-- **Advanced Search**: Semantic search across codebases and documentation
-- **Workflow Automation**: Automated file organization and cleanup
-- **Code Analysis**: AI-powered insights on code structure and patterns
-- **Team Collaboration**: Shared workspaces and file management
-- **Version Control Integration**: Seamless integration with Git workflows
+- **🧠 AI-Powered File Analysis**: Automatically generates summaries, tags, and categorization suggestions
+- **💬 Document Chat (RAG)**: Ask questions about your documents and get AI-powered answers based on content
+- **🔍 Smart Search**: Hybrid keyword and semantic search across your file system
+- **🏷️ Auto-Tagging**: AI generates technical and thematic tags for intelligent organization
+- **🔒 Sensitivity Detection**: Identifies files containing PII or sensitive information
+- **📁 Intelligent Categorization**: Suggests optimal folder structures based on content
+- **⚡ Real-time Scanning**: Progress tracking with live updates during file discovery
+- **🎨 Modern UI**: Clean, responsive interface with dark mode support
 
 ## Architecture
 
 ### Technology Stack
 
-- **Frontend**: React, TypeScript, Vite
-- **Backend**: Node.js, Express, TypeScript
-- **Database**: Azure Database for PostgreSQL with pgvector
-- **AI Services**: Azure OpenAI (Responses API), Azure AI Search
-- **Storage**: Azure Blob Storage
-- **Deployment**: Azure Static Web Apps / Azure App Service
+- **Frontend**: React, TypeScript, Vite, Tailwind CSS
+- **Backend**: Node.js, Express
+- **AI Services**: Azure OpenAI (GPT-4/GPT-4o) with chat completions
+- **File Processing**: textract for multi-format text extraction
+- **UI Components**: lucide-react for icons
 
-### Shared Azure Infrastructure
+### Azure AI Integration
 
-TypeScript File Manager leverages shared Azure AI resources from `rg-shared-ai`:
+Synapse leverages Azure OpenAI services for intelligent file operations:
 
-- **Azure OpenAI**: `shared-openai-eastus2` for file analysis and categorization
-- **Azure AI Search**: `shared-search-eastus2` for intelligent file search
-- **PostgreSQL with pgvector**: Shared database for file embeddings
-- **Azure Storage**: Shared storage account for file storage
+- **Chat Completions**: File analysis, summarization, and conversational Q&A
+- **JSON Mode**: Structured responses for file metadata extraction
+- **RAG Pattern**: Document context injection for accurate Q&A
 
 ## Configuration & Environment
 
 ### Required Environment Variables
 
+Create a `.env` file in the root directory with the following configuration:
+
 ```env
-# Azure OpenAI Configuration
-AZURE_OPENAI_ENDPOINT=https://shared-openai-eastus2.openai.azure.com/
-AZURE_OPENAI_API_KEY=your_api_key
-AZURE_OPENAI_DEPLOYMENT=gpt-4o
-AZURE_OPENAI_API_VERSION=2024-02-15-preview
+# Azure OpenAI Core Configuration
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+AZURE_OPENAI_KEY=your_api_key
+AZURE_OPENAI_CHAT_DEPLOYMENT=gpt-4o
+AZURE_OPENAI_CHAT_API_VERSION=2024-02-15-preview
 
-# Azure AI Search
-AZURE_SEARCH_ENDPOINT=https://shared-search-eastus2.search.windows.net
-AZURE_SEARCH_API_KEY=your_search_key
-AZURE_SEARCH_INDEX_NAME=filemanager-index
-
-# Database Configuration
-DB_SERVER_HOST=your-postgres-server.postgres.database.azure.com
-DB_NAME=filemanager
-DB_USER=your_db_user
-DB_PASSWORD=your_db_password
-DB_CONNECTION_STRING=postgresql://user:password@host:5432/database
-
-# Azure Storage
-AZURE_STORAGE_ACCOUNT=your_storage_account
-AZURE_STORAGE_CONTAINER=filemanager-files
-AZURE_STORAGE_CONNECTION_STRING=your_connection_string
+# Optional: Server Configuration
+PORT=3001
 ```
 
-**Note**: Secrets should be stored in Azure Key Vault or GitHub Secrets, never committed to git.
+**Security Note**: Never commit `.env` files to git. Use `.env.example` as a template and store actual secrets in Azure Key Vault or secure environment variables.
 
-## Getting Started (Local Development)
+## Getting Started
 
 ### Prerequisites
 
-- Node.js 20+
-- pnpm package manager
-- Azure subscription with access to shared resources
+- Node.js 20+ or compatible version
+- npm or pnpm package manager
+- Azure OpenAI API access with a deployed model (gpt-4, gpt-4o, or compatible)
+- Access to local file system for scanning
 
 ### Installation
 
 1. **Clone the repository**
 
 ```bash
-git clone https://github.com/shmindmaster/typescript-file-manager.git
-cd typescript-file-manager
+git clone https://github.com/shmindmaster/Synapse.git
+cd Synapse
 ```
 
 2. **Install dependencies**
 
 ```bash
-pnpm install
+npm install
 ```
 
 3. **Configure environment**
 
 ```bash
-cp .env.example .env.local
-# Edit .env.local with your Azure service credentials
+cp .env.example .env
+# Edit .env with your Azure OpenAI credentials
 ```
 
-4. **Start development server**
+4. **Start the backend server**
 
 ```bash
-pnpm dev
+npm run server
 ```
 
-The application will be available at `http://localhost:3000`.
+The server will start on `http://localhost:3001`.
 
-## Use Cases & Roadmap
+5. **Start the frontend (in a new terminal)**
 
-### Current Use Cases
+```bash
+npm run dev
+```
 
-- **Development Teams**: Organize and search codebases and documentation
-- **Documentation Teams**: Manage technical documentation and knowledge bases
-- **Project Management**: File organization for project assets
+The application will be available at `http://localhost:5173`.
+
+## Usage
+
+### Basic Workflow
+
+1. **Configure Directories**: 
+   - Set input sources (directories to scan)
+   - Set sort destinations (where files should be organized)
+
+2. **Define Keywords**: 
+   - Create keyword configurations for automatic file detection
+   - Map keywords to destination folders
+
+3. **Scan Files**: 
+   - Initiate a scan across your configured directories
+   - Watch real-time progress as files are analyzed
+
+4. **AI Interactions**:
+   - **Analyze**: Click "Analyze" on any file card to get:
+     - Executive summary (2 sentences)
+     - Semantic tags (5 technical/thematic tags)
+     - Suggested category/folder
+     - Sensitivity level (High/Low)
+   
+   - **Chat**: Click "Chat" to ask questions about the document:
+     - Ask about specific content
+     - Request clarifications
+     - Get context-aware answers
+
+5. **File Actions**:
+   - Move or copy files to configured destinations
+   - Automatic routing based on keyword matches
+
+## API Endpoints
+
+### POST `/api/search`
+Scans directories for files matching keyword configurations.
+
+**Request Body**:
+```json
+{
+  "baseDirectories": [{"path": "/path/to/scan"}],
+  "keywordConfigs": [{"keywords": ["keyword1"], "destinationFolder": "/dest"}]
+}
+```
+
+### POST `/api/analyze`
+Performs AI analysis on a specific file.
+
+**Request Body**:
+```json
+{
+  "filePath": "/path/to/file.txt"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "analysis": {
+    "summary": "Two sentence summary...",
+    "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
+    "category": "Suggested Folder Name",
+    "sensitivity": "Low"
+  }
+}
+```
+
+### POST `/api/chat`
+Chat with a document using RAG.
+
+**Request Body**:
+```json
+{
+  "filePath": "/path/to/file.txt",
+  "message": "What is this document about?",
+  "history": []
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "reply": "Based on the document content..."
+}
+```
+
+### POST `/api/file-action`
+Move or copy a file to a destination.
+
+**Request Body**:
+```json
+{
+  "file": {"name": "file.txt", "path": "/source/file.txt"},
+  "action": "move",
+  "destination": "/dest/folder"
+}
+```
+
+## Use Cases
+
+- **Personal Knowledge Management**: Organize personal documents, research papers, and notes
+- **Code Documentation**: Analyze and categorize technical documentation
+- **Research & Analysis**: Quickly understand and query large document collections
+- **Content Curation**: Auto-tag and organize downloaded articles and PDFs
+- **Compliance & Security**: Identify sensitive files and ensure proper storage
+
+## Roadmap
 
 ### Planned Enhancements
 
-- **Code Intelligence**: AI-powered code analysis and recommendations
-- **Automated Refactoring**: Intelligent file restructuring suggestions
-- **Team Insights**: Analytics on file usage and collaboration patterns
-- **Integration Hub**: Connect with GitHub, GitLab, and other development tools
+- **Vector Search**: Semantic similarity search using embeddings
+- **Batch Processing**: Analyze multiple files simultaneously
+- **Custom Prompts**: User-defined analysis templates
+- **Export Features**: Save analysis results and chat history
+- **Cloud Storage Integration**: Support for Azure Blob, S3, Google Drive
+- **Multi-language Support**: Enhanced text extraction for international documents
+- **Advanced RAG**: Chunk-based retrieval with citation
+
+## Development
+
+### Build for Production
+
+```bash
+npm run build
+```
+
+### Project Structure
+
+```
+Synapse/
+├── src/
+│   ├── components/
+│   │   ├── shared/
+│   │   │   ├── SmartFileCard.tsx    # AI-enhanced file display
+│   │   │   └── InsightDrawer.tsx     # AI interaction panel
+│   │   ├── KeywordSearch.tsx
+│   │   ├── ConfigurationPanel.tsx
+│   │   └── ...
+│   ├── App.tsx                       # Main application
+│   └── types.ts                      # TypeScript definitions
+├── server.js                         # Express backend with AI
+├── package.json
+└── .env.example
+```
+
+## Contributing
+
+This project is currently maintained by shmindmaster. Contributions, issues, and feature requests are welcome!
 
 ## License
 
 Proprietary - All rights reserved
+
+---
+
+**Built with ❤️ using Azure OpenAI**
