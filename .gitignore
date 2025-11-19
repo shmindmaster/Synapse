@@ -30,3 +30,9 @@ dist-ssr
 
 # Synapse Memory (Vector Store)
 synapse_memory.json
+
+# Test artifacts
+test-results/
+playwright-report/
+test-data/
+*.log
