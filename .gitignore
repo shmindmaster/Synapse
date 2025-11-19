@@ -36,3 +36,9 @@ test-results/
 playwright-report/
 test-data/
 *.log
+
+# Environment files (keep example)
+.env
+.env.local
+.env*.local
+!.env.example

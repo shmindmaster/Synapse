@@ -49,6 +49,49 @@
 
     This will launch both the frontend (port 5173) and the analysis server (port 3001).
 
+## 🧪 Testing
+
+Synapse includes a comprehensive E2E test suite using Playwright.
+
+### Quick Start
+
+1. **Install Playwright browsers:**
+   ```bash
+   npx playwright install chromium
+   ```
+
+2. **Run all tests:**
+   ```bash
+   npm test
+   ```
+
+3. **Run specific test suite:**
+   ```bash
+   npm run test:suite-a  # Core UX tests
+   npm run test:suite-b  # Workflow tests
+   npm run test:suite-c  # Neural Core tests
+   npm run test:suite-d  # AI Features tests
+   npm run test:suite-e  # UI/UX tests
+   ```
+
+4. **Run with UI (recommended for debugging):**
+   ```bash
+   npm run test:ui
+   ```
+
+### Test Structure
+
+- **Service Health** (4 tests): Backend prerequisite validation
+- **Suite A** (7 tests): Core UX & Configuration
+- **Suite B** (6 tests): Workflow & Functional operations
+- **Suite C** (5 tests): Neural Core - Indexing & Search
+- **Suite D** (6 tests): High-Value AI Features
+- **Suite E** (5 tests): Responsiveness & Accessibility
+
+**Total: 33 test cases** covering all major functionality.
+
+See [tests/README.md](./tests/README.md) for detailed documentation and [tests/TROUBLESHOOTING.md](./tests/TROUBLESHOOTING.md) for common issues.
+
 ## 🛠 Tech Stack
 
 * **Frontend**: React, TypeScript, Tailwind CSS, Lucide Icons
