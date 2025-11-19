@@ -147,7 +147,7 @@ function App() {
         mode={drawerMode}
       />
 
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${drawerOpen ? 'mr-0 md:mr-96' : ''}`}>
+      <div className="flex-1 flex flex-col transition-all duration-300">
         {/* Header */}
         <header className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
