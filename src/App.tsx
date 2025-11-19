@@ -95,7 +95,9 @@ function App() {
             const data = JSON.parse(line);
             if (data.results) setFiles(prev => [...data.results]); 
             if (data.filesProcessed) setProgress({ current: data.filesProcessed, total: data.totalFiles });
-          } catch (e) { /* Ignore partial chunks */ }
+          } catch (e) { 
+            addError(`JSON parse error: ${(e as Error).message} (line: "${line}")`);
+          }
         }
         partialData = lines[lines.length - 1];
       }
