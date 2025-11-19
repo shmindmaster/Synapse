@@ -109,7 +109,9 @@ app.post('/api/analyze', async (req, res) => {
   
   try {
     const content = await extractText(filePath);
-    const truncatedContent = content.substring(0, 10000); // Token limit protection
+    // Token limit protection: 10,000 characters ≈ 2,500 tokens for GPT-4
+    const MAX_CONTENT_LENGTH_FOR_ANALYSIS = 10000;
+    const truncatedContent = content.substring(0, MAX_CONTENT_LENGTH_FOR_ANALYSIS);
 
     const prompt = `
       Analyze the following file content and return a strictly valid JSON object (no markdown formatting).
