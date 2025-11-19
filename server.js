@@ -22,6 +22,11 @@ const apiKey = process.env.AZURE_OPENAI_KEY;
 const deployment = process.env.AZURE_OPENAI_CHAT_DEPLOYMENT || "gpt-4o"; 
 const apiVersion = process.env.AZURE_OPENAI_CHAT_API_VERSION || "2024-02-15-preview";
 
+// Validate Azure OpenAI credentials before initializing client
+if (!endpoint || !apiKey) {
+  console.error('ERROR: Azure OpenAI credentials not configured. Please set AZURE_OPENAI_ENDPOINT and AZURE_OPENAI_KEY in .env');
+  process.exit(1);
+}
 const client = new AzureOpenAI({ endpoint, apiKey, apiVersion, deployment });
 
 app.use(cors());
