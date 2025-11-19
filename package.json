@@ -1,7 +1,8 @@
 {
-  "name": "advanced-keyword-file-manager",
+  "name": "synapse",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
+  "description": "Synapse - Turn your file system into a queryable knowledge base",
   "type": "module",
   "scripts": {
     "dev": "vite",
